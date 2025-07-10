@@ -60,7 +60,7 @@ public class InputSystemController : MonoBehaviour
                 _isJumping=true;
                 _isFalling=false;
             }
-            else if(playerVerticalVelocity == -1f)
+            else if(playerVerticalVelocity == -1f && !hasGroundColliderLeft && !hasGroundColliderRight)
             {
                 _isGrounded = false;
                 _isJumping=false;
@@ -86,14 +86,10 @@ public class InputSystemController : MonoBehaviour
     private void Move()
     {
         var moveDirection = _move.ReadValue<Vector2>();
-        if (!_isGrounded && Mathf.Sign(moveDirection.x) == Mathf.Sign(transform.localScale.x))
-        {
-        }
-        else
-        {
-            _rigidbody.linearVelocityX = moveDirection.x * _moveSpeed;
-        }
-        if(moveDirection.x != 0)
+        _rigidbody.linearVelocityX = moveDirection.x * _moveSpeed;
+
+
+        if (moveDirection.x != 0)
         {
             transform.localScale = new Vector3(Mathf.Sign(moveDirection.x), 1, 1);
         }
