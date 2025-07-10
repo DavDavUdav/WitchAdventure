@@ -9,6 +9,8 @@ public class InputSystemController : MonoBehaviour
     [SerializeField] private Transform _groundCheckPointRight;
     [SerializeField] private float _rayLenght;
 
+    [SerializeField] private Animator _animator;
+
     private Rigidbody2D _rigidbody;
     private InputSystem_Actions _inputSystem;
     private InputAction _move;
@@ -19,8 +21,11 @@ public class InputSystemController : MonoBehaviour
     [SerializeField] private bool _isGrounded;
     [SerializeField] private bool _wasGrounded;
     [SerializeField] private bool _takeJumpButton;
+    [SerializeField] private bool _isMove;
+    [SerializeField] private bool _wasIsJumping;
+    [SerializeField] private bool _playedEndJump;
 
-
+    [SerializeField] private float _currentVerticalSpeed;
     private void Awake()
     {
         _inputSystem = new InputSystem_Actions();
@@ -29,10 +34,16 @@ public class InputSystemController : MonoBehaviour
     private void Start()
     {
         _rigidbody = GetComponent<Rigidbody2D>();
+
+        _isJumping = false;
+        _isFalling = false;
+        _takeJumpButton = false;
+        _playedEndJump = false;
     }
 
     private void FixedUpdate()
     {
+        _currentVerticalSpeed = _rigidbody.linearVelocityY;
         Move();
         var filter = new ContactFilter2D();
         filter.SetLayerMask(8);
@@ -45,9 +56,18 @@ public class InputSystemController : MonoBehaviour
         var hasGroundColliderRight = hitRight.collider != null;
         _wasGrounded = _isGrounded;
         _isGrounded = hasGroundColliderLeft || hasGroundColliderRight;
+        _wasIsJumping = _isJumping;
+
+
 
         if (_isGrounded && !_wasGrounded)
         {
+            if((_isJumping || _isFalling) && !_playedEndJump)
+            {
+                _animator.SetTrigger("IsEndJump");
+                _playedEndJump = true;
+            }
+
             _isJumping = false;
             _isFalling = false;
             _takeJumpButton = false;
@@ -59,13 +79,23 @@ public class InputSystemController : MonoBehaviour
                 _isGrounded=false;
                 _isJumping=true;
                 _isFalling=false;
+                
             }
-            else if(playerVerticalVelocity == -1f && !hasGroundColliderLeft && !hasGroundColliderRight)
+            else if(playerVerticalVelocity == -1f && !hasGroundColliderLeft && !hasGroundColliderRight && _currentVerticalSpeed > 2f)
             {
                 _isGrounded = false;
-                _isJumping=false;
+                _isJumping=true;
                 _isFalling=true;
+
             }
+        }
+
+        // amination
+        _animator.SetBool("IsMove", _isMove ? true : false);
+
+        if (_wasGrounded && !_isGrounded && _currentVerticalSpeed > 2f)
+        {
+            _animator.SetTrigger("IsStartJump");
         }
     }
 
@@ -91,7 +121,12 @@ public class InputSystemController : MonoBehaviour
 
         if (moveDirection.x != 0)
         {
+            _isMove = true;
             transform.localScale = new Vector3(Mathf.Sign(moveDirection.x), 1, 1);
+        }
+        else
+        {
+            _isMove = false;
         }
     }
 
@@ -106,6 +141,7 @@ public class InputSystemController : MonoBehaviour
 
     private void Jump()
     {
+        _playedEndJump = false;
         _rigidbody.linearVelocityY += _jumpHeight;
     }
 }
